@@ -1,6 +1,7 @@
 import { ProductCard } from "@/features/products/components/ProductCard";
 import { ProductGrid } from "@/features/products/components/ProductGrid";
 import { getActiveProducts } from "@/features/products/services/productService";
+import { connection } from "next/server";
 import type { ProductListResult } from "@/features/products/types/product";
 
 export function ProductListContent({ result }: { result: ProductListResult }) {
@@ -30,6 +31,7 @@ export function ProductListContent({ result }: { result: ProductListResult }) {
 }
 
 export async function ProductList() {
+  await connection();
   const result = await getActiveProducts();
   return <ProductListContent result={result} />;
 }
