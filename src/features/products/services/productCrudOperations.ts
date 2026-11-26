@@ -63,7 +63,6 @@ export async function setProductActiveRecord(
 
 export function toDatabaseProduct(input: ProductInput) {
   return {
-    code: input.code,
     category_id: input.categoryId,
     name: input.name,
     description: input.description,

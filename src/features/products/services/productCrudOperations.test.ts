@@ -8,7 +8,6 @@ import {
 import type { ProductInput } from "@/features/products/types/product";
 
 const input: ProductInput = {
-  code: "BET-0002",
   categoryId: "1",
   name: "Tren de madera",
   description: null,
@@ -20,7 +19,7 @@ const input: ProductInput = {
 function row(overrides: Record<string, unknown> = {}) {
   return {
     id: 2,
-    code: input.code,
+    code: "PEL-0001",
     category_id: 1,
     name: input.name,
     description: input.description,
@@ -50,6 +49,15 @@ describe("product CRUD operations", () => {
     expect(dataSource.create).toHaveBeenCalledWith(input);
   });
 
+  it("does not send a code when creating a product", async () => {
+    const dataSource = createDataSource();
+    await createProductRecord(dataSource, input);
+
+    expect(dataSource.create).toHaveBeenCalledWith(
+      expect.not.objectContaining({ code: expect.anything() }),
+    );
+  });
+
   it("rejects a duplicate code", async () => {
     const dataSource = createDataSource();
     vi.mocked(dataSource.create).mockResolvedValue({ data: null, error: { code: "23505" } });
@@ -60,6 +68,11 @@ describe("product CRUD operations", () => {
     const dataSource = createDataSource();
     const result = await updateProductRecord(dataSource, "2", { ...input, name: "Tren actualizado" });
     expect(result.status === "success" ? result.product.name : null).toBe("Tren actualizado");
+    expect(dataSource.update).toHaveBeenCalledWith(
+      "2",
+      expect.not.objectContaining({ code: expect.anything() }),
+      undefined,
+    );
   });
 
   it("deactivates and reactivates a product", async () => {

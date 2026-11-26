@@ -17,10 +17,11 @@ export type ProductListResult =
 export type Category = {
   id: string;
   name: string;
+  slug: string;
+  codePrefix: string;
 };
 
 export type ProductInput = {
-  code: string;
   categoryId: string;
   name: string;
   description: string | null;

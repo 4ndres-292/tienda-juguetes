@@ -19,15 +19,21 @@ describe("uploadValidatedProductImage", () => {
       "toy.webp",
       { type: "image/webp" },
     );
-    const result = await uploadValidatedProductImage(storage, "42", image, "unique-id");
+    const result = await uploadValidatedProductImage(
+      storage,
+      "peluches",
+      "PEL-0001",
+      image,
+      "unique-id",
+    );
 
     expect(result).toEqual({
       status: "success",
       publicUrl: "https://example.com/image.webp",
-      path: "products/42/unique-id.webp",
+      path: "peluches/PEL-0001/unique-id.webp",
     });
     expect(storage.upload).toHaveBeenCalledWith(
-      "products/42/unique-id.webp",
+      "peluches/PEL-0001/unique-id.webp",
       image,
       { contentType: "image/webp", upsert: false },
     );
@@ -41,7 +47,13 @@ describe("uploadValidatedProductImage", () => {
       { type: "image/png" },
     );
 
-    expect(await uploadValidatedProductImage(storage, "42", image, "unique-id")).toEqual({
+    expect(await uploadValidatedProductImage(
+      storage,
+      "vehiculos",
+      "CAR-0001",
+      image,
+      "unique-id",
+    )).toEqual({
       status: "error",
       message: "No se pudo subir la imagen.",
     });

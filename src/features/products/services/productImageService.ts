@@ -13,13 +13,14 @@ export type ProductImageUploadResult =
   | { status: "error"; message: string };
 
 export async function uploadProductImage(
-  productId: string,
+  categorySlug: string,
+  productCode: string,
   file: File,
 ): Promise<ProductImageUploadResult> {
   await requireAdmin();
   const supabase = createPrivilegedSupabaseClient();
   const storage = supabase.storage.from(productBucket);
-  const result = await uploadValidatedProductImage(storage, productId, file);
+  const result = await uploadValidatedProductImage(storage, categorySlug, productCode, file);
 
   if (result.status === "error") {
     console.error("Product image: upload failed");

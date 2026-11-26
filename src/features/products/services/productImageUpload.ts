@@ -16,7 +16,8 @@ export type ProductImageStorage = {
 
 export async function uploadValidatedProductImage(
   storage: ProductImageStorage,
-  productId: string,
+  categorySlug: string,
+  productCode: string,
   file: File,
   uniqueId = crypto.randomUUID(),
 ): Promise<ProductImageUploadResult> {
@@ -31,7 +32,7 @@ export async function uploadValidatedProductImage(
   }
 
   const extension = getImageExtension(file.type);
-  const path = `products/${productId}/${uniqueId}.${extension}`;
+  const path = `${categorySlug}/${productCode}/${uniqueId}.${extension}`;
   const { error } = await storage.upload(path, file, {
     contentType: file.type,
     upsert: false,

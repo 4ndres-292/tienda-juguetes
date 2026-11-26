@@ -48,14 +48,11 @@ export function transformProductRows(rows: unknown): Product[] {
 export const categoryRowSchema = z.object({
   id: databaseIdSchema,
   name: z.string().trim().min(1),
+  slug: z.string().trim().min(1),
+  code_prefix: z.string().trim().regex(/^[A-Z]{2,5}$/),
 });
 
 export const productFormSchema = z.object({
-  code: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .regex(/^BET-\d{3,}$/, "Usa el formato BET-0001"),
   name: z.string().trim().min(2, "Ingresa el nombre del producto").max(120),
   description: z
     .string()
@@ -72,5 +69,7 @@ export function transformCategoryRows(rows: unknown) {
   return z.array(categoryRowSchema).parse(rows).map((row) => ({
     id: row.id,
     name: row.name,
+    slug: row.slug,
+    codePrefix: row.code_prefix,
   }));
 }

@@ -27,11 +27,12 @@ export function ProductForm({ action, categories, product }: ProductFormProps) {
   return (
     <form action={formAction} className="space-y-6 rounded-3xl bg-white p-5 shadow-sm sm:p-8">
       <div className="grid gap-5 sm:grid-cols-2">
-        <div>
-          <label htmlFor="code" className="block text-sm font-semibold text-brand-primary">Código</label>
-          <input id="code" name="code" required defaultValue={product?.code} placeholder="BET-0001" className={inputClassName} />
-          <FieldErrors messages={state.fieldErrors?.code} />
-        </div>
+        {product ? (
+          <div>
+            <p className="block text-sm font-semibold text-brand-primary">Código</p>
+            <p className={`${inputClassName} bg-brand-cream`} aria-label="Código del producto">{product.code}</p>
+          </div>
+        ) : null}
         <div>
           <label htmlFor="categoryId" className="block text-sm font-semibold text-brand-primary">Categoría</label>
           <select id="categoryId" name="categoryId" required defaultValue={product?.categoryId ?? ""} className={inputClassName}>

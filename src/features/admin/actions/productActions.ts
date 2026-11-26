@@ -23,7 +23,6 @@ import type { AdminActionState } from "@/features/admin/types/admin";
 
 function parseProductForm(formData: FormData) {
   return productFormSchema.safeParse({
-    code: formData.get("code"),
     name: formData.get("name"),
     description: formData.get("description") ?? "",
     price: formData.get("price"),
@@ -42,8 +41,7 @@ function mutationErrorState(status: string): AdminActionState {
   if (status === "duplicate_code") {
     return {
       status: "error",
-      message: "Ya existe un producto con ese código.",
-      fieldErrors: { code: ["El código debe ser único"] },
+      message: "No se pudo generar un código único para el producto.",
     };
   }
 
@@ -55,9 +53,9 @@ function revalidateProductViews() {
   revalidatePath("/admin");
 }
 
-async function categoryExists(categoryId: string) {
+async function getValidCategory(categoryId: string) {
   const categories = await getCategories();
-  return categories.some((category) => category.id === categoryId);
+  return categories.find((category) => category.id === categoryId) ?? null;
 }
 
 export async function createProductAction(
@@ -66,6 +64,9 @@ export async function createProductAction(
 ): Promise<AdminActionState> {
   const parsedProduct = parseProductForm(formData);
   const image = getOptionalImage(formData);
+  const category = parsedProduct.success
+    ? await getValidCategory(parsedProduct.data.categoryId)
+    : null;
 
   if (!parsedProduct.success) {
     return {
@@ -75,7 +76,7 @@ export async function createProductAction(
     };
   }
 
-  if (!(await categoryExists(parsedProduct.data.categoryId))) {
+  if (!category) {
     return {
       status: "error",
       message: "La categoría seleccionada no existe.",
@@ -90,7 +91,7 @@ export async function createProductAction(
   }
 
   if (image) {
-    const upload = await uploadProductImage(result.product.id, image);
+    const upload = await uploadProductImage(category.slug, result.product.code, image);
 
     if (upload.status !== "success") {
       await rollbackCreatedProduct(result.product.id);
@@ -107,7 +108,7 @@ export async function createProductAction(
   }
 
   revalidateProductViews();
-  redirect("/admin");
+  redirect(`/admin?createdCode=${encodeURIComponent(result.product.code)}`);
 }
 
 export async function updateProductAction(
@@ -117,6 +118,9 @@ export async function updateProductAction(
 ): Promise<AdminActionState> {
   const parsedProduct = parseProductForm(formData);
   const newImage = getOptionalImage(formData);
+  const category = parsedProduct.success
+    ? await getValidCategory(parsedProduct.data.categoryId)
+    : null;
 
   if (!parsedProduct.success) {
     return {
@@ -126,7 +130,7 @@ export async function updateProductAction(
     };
   }
 
-  if (!(await categoryExists(parsedProduct.data.categoryId))) {
+  if (!category) {
     return {
       status: "error",
       message: "La categoría seleccionada no existe.",
@@ -143,7 +147,7 @@ export async function updateProductAction(
   let uploadedImage: { path: string; publicUrl: string } | null = null;
 
   if (newImage) {
-    const upload = await uploadProductImage(productId, newImage);
+    const upload = await uploadProductImage(category.slug, currentProduct.code, newImage);
 
     if (upload.status !== "success") {
       return { status: "error", message: upload.message };

@@ -4,10 +4,18 @@ import { AdminProductList } from "@/features/admin/components/AdminProductList";
 import { requireAdminPage } from "@/features/admin/services/adminAuthService";
 import { getAdminProducts } from "@/features/products/services/adminProductService";
 
-async function AdminProductsContent() {
+type AdminPageProps = {
+  searchParams: Promise<{ createdCode?: string | string[] }>;
+};
+
+async function AdminProductsContent({ searchParams }: AdminPageProps) {
   await requireAdminPage();
 
+  const query = await searchParams;
   const products = await getAdminProducts();
+  const createdCode = typeof query.createdCode === "string" && /^[A-Z]{2,5}-\d{4,}$/.test(query.createdCode)
+    ? query.createdCode
+    : null;
 
   return (
     <>
@@ -21,16 +29,21 @@ async function AdminProductsContent() {
           Nuevo producto
         </Link>
       </div>
+      {createdCode ? (
+        <p role="status" className="mb-6 rounded-xl bg-emerald-50 p-4 font-semibold text-emerald-800">
+          Producto registrado correctamente. Código: {createdCode}
+        </p>
+      ) : null}
       <AdminProductList products={products} />
     </>
   );
 }
 
-export default function AdminPage() {
+export default function AdminPage({ searchParams }: AdminPageProps) {
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <Suspense fallback={<div className="h-80 animate-pulse rounded-2xl bg-white" />}>
-        <AdminProductsContent />
+        <AdminProductsContent searchParams={searchParams} />
       </Suspense>
     </main>
   );

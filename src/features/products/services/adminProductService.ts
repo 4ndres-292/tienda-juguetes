@@ -104,7 +104,7 @@ export async function getCategories(): Promise<Category[]> {
   const supabase = createPrivilegedSupabaseClient();
   const { data, error } = await supabase
     .from("categories")
-    .select("id, name")
+    .select("id, name, slug, code_prefix")
     .order("name", { ascending: true });
 
   if (error) {
