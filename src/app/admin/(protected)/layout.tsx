@@ -16,8 +16,8 @@ async function ProtectedAdminShell({ children }: { children: ReactNode }) {
             Beetho Admin
           </Link>
           <div className="flex items-center gap-3">
-            <Link href="/admin/orders/new" className="text-sm font-semibold text-brand-secondary hover:text-brand-primary">
-              Procesar reserva
+            <Link href="/admin/orders" className="text-sm font-semibold text-brand-secondary hover:text-brand-primary">
+              Reservas
             </Link>
             <Link href="/" className="text-sm font-semibold text-brand-secondary hover:text-brand-primary">
               Ver catálogo

@@ -1,5 +1,5 @@
 import { ProductImage } from "@/features/products/components/ProductImage";
-import { WhatsAppButton } from "@/features/products/components/WhatsAppButton";
+import { ReservationButton } from "@/features/reservations/components/ReservationButton";
 import type { Product } from "@/features/products/types/product";
 import { formatProductPrice, getProductAvailability } from "@/features/products/utils/productPresentation";
 
@@ -25,7 +25,7 @@ export function ProductCard({ product }: ProductCardProps) {
           {product.description || "Un juguete para crear momentos especiales."}
         </p>
         <p className="mt-auto pt-4 text-lg font-extrabold text-brand-primary sm:text-xl">{formatProductPrice(product.price)}</p>
-        <WhatsAppButton product={product} />
+        <ReservationButton product={product} />
       </div>
     </article>
   );

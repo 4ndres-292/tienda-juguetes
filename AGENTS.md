@@ -8,6 +8,8 @@ Antes de comenzar cualquier tarea, consultar:
 2. [Base de datos](docs/DATABASE.md)
 3. [Sistema de diseño](docs/DESIGN_SYSTEM.md)
 4. [Clean Code](docs/CLEAN_CODE.md)
+5. [Registro de progreso](docs/WORKLOG.md)
+6. [Incidencias y recuperación](docs/TROUBLESHOOTING.md), cuando exista un error o bloqueo.
 
 ### Reglas de consulta
 
@@ -27,7 +29,75 @@ los apartados afectados y conservar la información válida existente:
 - Nueva tabla, columna, función, trigger o política: actualizar `docs/DATABASE.md`.
 - Nuevo componente visual o cambio de estilos: actualizar `docs/DESIGN_SYSTEM.md`.
 - Nueva convención de desarrollo: actualizar `docs/CLEAN_CODE.md`.
+- Incidencia, diagnóstico o solución reutilizable: actualizar `docs/TROUBLESHOOTING.md`.
+- Avance, validación o siguiente actividad: actualizar `docs/WORKLOG.md`.
 - Actualizar la fecha y el nivel de certeza de la información modificada.
+
+## Protocolo de continuidad y recuperación de contexto
+
+### Antes de cada tarea
+
+1. Leer `AGENTS.md`.
+2. Consultar los documentos relacionados con la tarea.
+3. Revisar el último avance de `docs/WORKLOG.md`.
+4. Consultar `docs/TROUBLESHOOTING.md` si existe un error o bloqueo.
+5. Identificar qué está implementado y qué falta.
+6. Continuar desde el último punto válido; no reconstruir trabajo terminado.
+
+Antes de investigar un error, comparar su mensaje, ruta, entorno, síntomas, archivos relacionados y cambios
+recientes con las incidencias registradas. Si coincide, comprobar primero si la solución anterior sigue siendo
+aplicable, sin asumir que síntomas similares tienen siempre la misma causa.
+
+### Durante el trabajo
+
+- Reutilizar código y evidencia existentes; evitar investigaciones, diagnósticos y comandos ya concluidos.
+- Trabajar incrementalmente y probar únicamente lo correspondiente a los cambios.
+- No reconstruir funcionalidades terminadas ni modificar configuraciones estables sin evidencia.
+- Registrar errores relevantes, diagnóstico, resultado y solución confirmada.
+- Si una comprobación falla repetidamente con el mismo resultado, no ejecutarla de nuevo sin cambiar la
+  hipótesis o las condiciones. Registrar lo comprobado, identificar la información faltante, formular una
+  hipótesis nueva y realizar una prueba concreta.
+- Después de dos intentos equivalentes sin información nueva, abandonar esa estrategia, explicar el bloqueo
+  y solicitar la información o autorización necesaria.
+
+### Recuperación de localhost y servidor de desarrollo
+
+Cuando localhost no responda o quede cargando:
+
+1. Revisar primero `docs/TROUBLESHOOTING.md`.
+2. Identificar el puerto configurado, sin cambiarlo todavía.
+3. Comprobar si un proceso exacto del proyecto está escuchando en ese puerto.
+4. Comprobar la respuesta mediante una petición HTTP con tiempo límite.
+5. Revisar los logs relevantes del proceso.
+6. Distinguir si el fallo pertenece al proceso, puerto, aplicación o conexión externa.
+7. Aplicar la corrección mínima respaldada por la evidencia y verificarla.
+
+### Límites de tiempo obligatorios
+
+- Toda petición de diagnóstico a localhost debe usar un límite máximo de 10 segundos.
+- Una compilación inicial de ruta puede observarse hasta 30 segundos. Si no produce salida nueva ni responde,
+  registrar el bloqueo y abandonar esa estrategia; no encadenar nuevas esperas equivalentes.
+- Los comandos de inspección de procesos deben tener un límite máximo de 5 segundos.
+- Un servidor iniciado solo para verificación debe ejecutarse con cierre automático o con un mecanismo externo
+  acotado. No depender de una escritura interactiva de `Ctrl+C` para finalizarlo.
+- El cierre debe dirigirse únicamente al PID confirmado del proyecto: primero `SIGINT`, esperar como máximo
+  5 segundos y, si continúa, informar antes de aplicar otra señal.
+- Ninguna llamada de espera debe superar 30 segundos. Para trabajos legítimamente largos, revisar progreso
+  mediante intervalos acotados y comunicar el estado, sin acumular esperas iguales.
+
+Evitar iniciar repetidamente `npm run dev`, abrir instancias innecesarias, cambiar puertos sin explicación,
+usar `killall node` o `pkill node`, terminar procesos ajenos, eliminar `.next` por rutina, reinstalar
+dependencias sin evidencia o cambiar configuraciones que funcionaban. Si hace falta reiniciar, identificar
+primero el PID y confirmar que pertenece a este proyecto. No terminar procesos ajenos ni realizar acciones
+destructivas sin autorización.
+
+### Al finalizar
+
+1. Actualizar únicamente los documentos afectados.
+2. Registrar en `docs/WORKLOG.md` la funcionalidad, pruebas reales, estado y siguiente paso.
+3. Registrar en `docs/TROUBLESHOOTING.md` cualquier incidencia o solución reutilizable.
+4. Indicar claramente los pendientes o bloqueos.
+5. No realizar commits, push, merge ni despliegues sin autorización explícita.
 
 1. Contexto del proyecto
 Beetho es una tienda web de juguetes. El objetivo inicial es un MVP con catálogo público, categorías, búsqueda, detalle de productos, carrito y registro de pedidos sin autenticación de clientes.

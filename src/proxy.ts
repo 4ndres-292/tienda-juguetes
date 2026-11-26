@@ -1,9 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  adminSessionModeCookieName,
+  applyAdminSessionMode,
+  parseAdminSessionMode,
+} from "@/features/admin/utils/adminSessionPersistence";
 import { getPublicSupabaseConfig } from "@/lib/supabase/config";
 
 export async function proxy(request: NextRequest) {
   const { url, publishableKey } = getPublicSupabaseConfig();
+  const sessionMode = parseAdminSessionMode(
+    request.cookies.get(adminSessionModeCookieName)?.value,
+  );
   let response = NextResponse.next({ request });
   const supabase = createServerClient(url, publishableKey, {
     cookies: {
@@ -11,7 +19,9 @@ export async function proxy(request: NextRequest) {
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         response = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+        cookiesToSet.forEach(({ name, value, options }) => {
+          response.cookies.set(name, value, applyAdminSessionMode(options, sessionMode));
+        });
       },
     },
   });

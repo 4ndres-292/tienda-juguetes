@@ -30,8 +30,9 @@ WhatsApp y administración privada de productos. El repositorio usa:
 src/
   app/                     Rutas, layouts, error boundary y health check
   features/admin/          Autenticación, Server Actions y UI administrativa
-  features/orders/         Parser, validación y vista previa de reservas
+  features/orders/         Consulta y gestión administrativa de reservas
   features/products/       Catálogo, CRUD, imágenes, schemas, tipos y WhatsApp
+  features/reservations/   Lista pública temporal, persistencia y totales referenciales
   lib/supabase/            Configuración y clientes compartidos
   proxy.ts                 Protección y refresco de sesión para /admin
 supabase/migrations/       Migraciones SQL versionadas
@@ -50,9 +51,9 @@ solo donde necesitan interacción del navegador.
 | `/admin/products/new` | Confirmado | Creación de producto e imagen principal. |
 | `/admin/products/[id]/edit` | Confirmado | Edición de producto e imagen; código de solo lectura. |
 | `/api/health/db` | Confirmado | Comprueba lectura de `categories` con la clave publicable. |
-| `/admin/orders/new` | Confirmado | Parser y vista previa de mensajes de reserva; todavía no registra órdenes. |
-| `/admin/orders` | Pendiente | Listado y filtros de órdenes. |
-| `/admin/orders/[id]` | Pendiente | Detalle y gestión de una orden. |
+| `/reservation` | Confirmado | Datos de contacto, revisión y registro de una reserva múltiple. |
+| `/admin/orders` | Confirmado | Listado, búsqueda y filtros de reservas. |
+| `/admin/orders/[id]` | Confirmado | Detalle, stock actual, aceptación o rechazo de una reserva. |
 
 ## Componentes principales
 
@@ -60,10 +61,18 @@ solo donde necesitan interacción del navegador.
 
 - `ProductList`: consulta productos y resuelve estados de éxito, error y vacío.
 - `ProductGrid`: cuadrícula responsive de una a cinco columnas.
-- `ProductCard`: tarjeta con imagen, código, disponibilidad, descripción, precio y reserva.
+- `ProductCard`: tarjeta con imagen, código, disponibilidad, descripción, precio y agregado a reserva.
 - `ProductImage`: `next/image`, `object-contain` y alternativa ante URL ausente o error.
 - `ProductListSkeleton`: diez tarjetas de carga.
 - `WhatsAppButton`: abre un enlace `wa.me` o muestra estado no disponible.
+
+### Lista pública de reserva
+
+- `ReservationProvider`: estado cliente y sincronización validada con `localStorage`.
+- `ReservationButton`: agrega productos activos y disponibles desde cada tarjeta.
+- `ReservationSummary`: acceso flotante con cantidad total seleccionada.
+- `ReservationList` y `ReservationItem`: edición de cantidades, eliminación, alertas de stock y total.
+- `ReservationCheckout`: contacto mínimo, revisión, confirmación y resultado con código registrado.
 
 ### Administración
 
@@ -73,6 +82,9 @@ solo donde necesitan interacción del navegador.
 - `ProductImageUpload`: selección, validación inicial y vista previa.
 - `DeleteConfirmationDialog`: confirmación de desactivación lógica.
 - `ProductStatusBadge`: estado activo/inactivo.
+- `AdminOrderList`: búsqueda y filtros por estado de reservas.
+- `OrderActions`: aceptación o rechazo confirmado desde el detalle.
+- `OrderStatusBadge`: presentación consistente de estados de reserva.
 
 ## Servicios y flujos
 
@@ -96,19 +108,29 @@ solo donde necesitan interacción del navegador.
 
 ### WhatsApp
 
-`buildWhatsAppReservationMessage()` centraliza el texto y
-`buildWhatsAppReservationUrl()` aplica `encodeURIComponent`. El formato multilínea, las líneas en blanco,
-la cantidad singular/plural y el precio `Bs` están cubiertos por pruebas exactas. La tarjeta usa cantidad 1.
-No se registra una orden ni se llama a la API de Meta.
+Después del registro, `buildRegisteredReservationMessage()` genera un resumen únicamente con el código,
+cantidad total e importe devueltos por PostgreSQL. `buildRegisteredReservationWhatsAppUrl()` aplica
+`encodeURIComponent` y usa el número configurado. WhatsApp no crea, recibe ni cambia el estado de la
+reserva; no se llama a la API de Meta.
 
-### Procesamiento manual de reservas
+### Lista múltiple de reserva
 
-1. `/admin/orders/new` recibe un mensaje pegado por el administrador.
-2. `parseReservationMessage()` extrae nombre, código, cantidad y precio referencial de forma determinista.
-3. La Server Action vuelve a verificar autorización y consulta el producto por código.
-4. `prepareReservationPreview()` calcula el total con el precio actual de PostgreSQL.
-5. La UI advierte diferencias de nombre/precio, stock insuficiente o producto inactivo.
-6. **Pendiente:** registrar la orden después de inspeccionar `orders` y `order_items`.
+1. La página pública envuelve el catálogo en `ReservationProvider`.
+2. El cliente puede agregar productos, cambiar cantidades, eliminarlos y vaciar la lista.
+3. Los datos recuperados de `localStorage` se validan con Zod y se descartan si no son confiables.
+4. La UI calcula subtotales y total referencial y advierte cuando la cantidad supera el stock informado.
+5. `/reservation` envía únicamente identificadores y cantidades; el servidor valida contacto y productos.
+6. PostgreSQL obtiene precios vigentes, calcula el total y crea orden e ítems en una transacción idempotente.
+7. La confirmación muestra el código `RES-*` y permite abrir WhatsApp o copiar el código.
+
+### Gestión administrativa de reservas
+
+1. `/admin/orders` verifica autorización, marca vencimientos pendientes y lista reservas con filtros.
+2. `/admin/orders/[id]` presenta snapshots comerciales y stock/actividad actuales de cada producto.
+3. Aceptar ejecuta una función transaccional que bloquea orden y productos, valida todo el stock, descuenta
+   todas las unidades y confirma; nunca acepta parcialmente.
+4. Rechazar conserva inventario y admite un motivo breve.
+5. Las operaciones vuelven a verificar al administrador en el servidor y revalidan catálogo y panel.
 
 ## Autenticación y autorización
 
@@ -119,8 +141,10 @@ y cada servicio administrativo llama a `requireAdmin()` antes de usar privilegio
 El cliente privilegiado usa `SUPABASE_SECRET_KEY`, está marcado `server-only` y desactiva persistencia y
 refresco de sesión. El cierre de sesión usa `supabase.auth.signOut()`.
 
-**Pendiente.** No existe opción “Mantener mi sesión iniciada” ni una política diferenciada entre sesión
-temporal y persistente.
+**Confirmado.** El login ofrece “Mantener mi sesión iniciada”. Una cookie HttpOnly conserva únicamente el
+modo elegido: las cookies de Auth no llevan expiración en modo temporal y conservan la expiración de
+Supabase en modo persistente. El proxy aplica la misma política durante la renovación. No se almacenan
+contraseñas ni tokens adicionales y el cierre de sesión elimina también el marcador de modo.
 
 ## Variables de entorno conocidas
 
@@ -150,6 +174,11 @@ Solo se documentan nombres, nunca valores:
 - Construcción del mensaje y enlace de WhatsApp.
 - Parser tolerante de mensajes y preparación de vista previa con precio confiable.
 - Comprobaciones unitarias de autorización administrativa.
+- Política diferenciada de sesión administrativa temporal o persistente.
+- Lista de reserva múltiple, cantidades, total referencial y persistencia temporal validada.
+- Registro transaccional e idempotente de reservas con precios actuales de PostgreSQL.
+- Código público, confirmación y mensaje de WhatsApp posterior al registro.
+- Listado, detalle, aceptación, rechazo y vencimiento administrativo de reservas.
 
 ### Implementado y comprobado directamente en Supabase el 2026-11-26
 
@@ -168,13 +197,13 @@ Solo se documentan nombres, nunca valores:
 
 - Detalle público de producto.
 - Carrito, checkout y registro de pedidos del MVP original.
-- Registro, listado y gestión de órdenes.
-- Webhook oficial de WhatsApp Cloud API.
-- Persistencia opcional de sesión administrativa.
+- Comprobación manual cerrando y reabriendo un navegador real para ambos modos de sesión.
+- Verificación visual completa del flujo de reservas en un navegador real y en producción.
 
 ### Descartado para el alcance actual
 
 - Automatización de WhatsApp Web con librerías no oficiales.
+- Lectura automática de WhatsApp, webhooks y WhatsApp Cloud API.
 - Pagos electrónicos y autenticación de clientes.
 
 ## Registro de decisiones
@@ -184,7 +213,9 @@ Solo se documentan nombres, nunca valores:
 | 2026-11-26 | Generar códigos en PostgreSQL mediante trigger y contador por categoría. | Evitar cálculos en cliente, colisiones y condiciones de carrera. |
 | 2026-11-26 | Conservar códigos al cambiar datos o categoría. | Evitar romper referencias existentes. |
 | 2026-11-26 | Guardar imágenes bajo `categoria/codigo/uuid.ext` dentro del bucket `products`. | Organización estable sin duplicar el nombre del bucket. |
-| 2026-11-26 | Separar parser y preparación de vista previa de la Server Action. | Permitir reutilizar la lógica desde un webhook oficial futuro sin duplicarla. |
+| 2026-11-26 | Conservar el modo de sesión en una cookie HttpOnly sin credenciales. | Permitir que las renovaciones de Supabase respeten la elección temporal o persistente. |
+| 2026-11-26 | Procesar reservas íntegramente en Beetho y usar WhatsApp solo para comunicar su código. | Mantener PostgreSQL como fuente de verdad y eliminar la dependencia de mensajes entrantes. |
+| 2026-11-26 | Vencer reservas pendientes después de 24 horas. | Evitar aceptar solicitudes antiguas sin introducir un programador externo. |
 | Confirmado en código | Usar desactivación lógica mediante `is_active`. | Conservar registros e imágenes para restauración. |
 | Confirmado en código | Autorizar administración por un único `ADMIN_USER_ID`. | Mantener una autenticación administrativa sencilla para esta versión. |
 

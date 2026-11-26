@@ -44,6 +44,19 @@ export function AdminLogin() {
           <p key={message} className="mt-1 text-sm text-red-700">{message}</p>
         ))}
       </div>
+      <label className="flex cursor-pointer items-start gap-3 text-sm text-brand-primary">
+        <input
+          name="rememberMe"
+          type="checkbox"
+          className="mt-0.5 size-4 rounded border-brand-secondary text-brand-primary accent-brand-primary"
+        />
+        <span>
+          <span className="font-semibold">Mantener mi sesión iniciada</span>
+          <span className="mt-0.5 block text-xs text-brand-secondary">
+            Úsalo únicamente en un dispositivo personal.
+          </span>
+        </span>
+      </label>
       {state.message ? (
         <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
           {state.message}

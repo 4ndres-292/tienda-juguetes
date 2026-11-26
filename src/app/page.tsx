@@ -1,10 +1,11 @@
 import { Suspense } from "react";
 import { ProductList } from "@/features/products/components/ProductList";
 import { ProductListSkeleton } from "@/features/products/components/ProductListSkeleton";
+import { ReservationSummary } from "@/features/reservations/components/ReservationSummary";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-brand-cream">
+    <main className="min-h-screen bg-brand-cream pb-20">
       <header className="bg-brand-primary text-white">
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-brand-cream/80">
@@ -36,6 +37,8 @@ export default function Home() {
           <ProductList />
         </Suspense>
       </section>
+        <ReservationSummary />
+      <ReservationSummary />
     </main>
   );
 }

@@ -69,17 +69,33 @@ contenido y acciones desde `sm`.
 - Código en mayúsculas visuales, badge de disponibilidad y nombre limitado a dos líneas.
 - Descripción limitada a dos líneas con texto alternativo cuando falta.
 - Precio destacado al pie y botón verde de WhatsApp.
+- La tarjeta pública usa un botón café de ancho completo para agregar el producto a la reserva múltiple.
 - Skeleton con diez tarjetas y pulsos en tonos café.
+
+### Lista de reserva
+
+- Acceso flotante café en la esquina inferior con el total de unidades seleccionadas.
+- Panel lateral blanco de ancho máximo `md`, con overlay negro al 40% y bloqueo temporal del scroll.
+- Cada artículo muestra imagen, nombre, código, cantidad, subtotal y acción de eliminación.
+- Los controles `−` y `+` mantienen una cantidad mínima de uno.
+- El pie crema muestra el total referencial, aviso de validación del servidor y acciones para vaciar o
+  continuar a la confirmación.
+- La confirmación usa una composición responsive de resumen y formulario; el éxito destaca el código de
+  reserva y ofrece abrir WhatsApp o copiar el código.
 
 ### Administración
 
 - Shell crema con cabecera blanca y navegación compacta.
-- La navegación incluye acceso directo a “Procesar reserva”.
+- La navegación incluye acceso directo a “Reservas”.
 - Listado en tarjetas blancas; búsqueda por nombre o código.
 - Formularios blancos, `rounded-3xl`, campos con borde café y anillo de foco.
-- El procesamiento de reservas utiliza dos paneles responsive: mensaje y vista previa.
+- El listado de reservas usa filtros compactos y tabla con desplazamiento horizontal en pantallas estrechas.
+- El detalle combina información del cliente, tabla de artículos/stock y panel de aceptar o rechazar.
+- Estados de reserva: ámbar pendiente, verde confirmada, rojo rechazada y gris vencida.
 - Modal de desactivación con overlay negro al 40%.
 - Login centrado en una tarjeta blanca de ancho máximo `md`.
+- El login incluye una casilla “Mantener mi sesión iniciada” y una advertencia breve para dispositivos
+  compartidos.
 
 ### Imágenes
 

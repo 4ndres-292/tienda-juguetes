@@ -10,9 +10,9 @@ y `order_items`. Por ello se documentan como **confirmadas** únicamente las col
 declaradas en la migración disponible. Los tipos originales, defaults, índices y políticas no visibles se
 marcan como **pendientes de verificar**.
 
-La migración `supabase/migrations/202611260001_product_code_automation.sql` fue ejecutada y comprobada en
-el proyecto conectado el 2026-11-26. Esto no garantiza por sí solo que cualquier otro entorno tenga el mismo
-estado.
+Las migraciones `supabase/migrations/202611260001_product_code_automation.sql` y
+`supabase/migrations/202611260002_order_workflow.sql` fueron ejecutadas y comprobadas en el proyecto
+conectado el 2026-11-26. Esto no garantiza por sí solo que cualquier otro entorno tenga el mismo estado.
 
 ## Esquema conocido
 
@@ -56,9 +56,15 @@ por una función `SECURITY DEFINER`.
 
 ### `public.orders` y `public.order_items`
 
-**Pendiente de verificar.** `AGENTS.md` declara estas tablas como parte del modelo inicial, pero no existe
-una definición local ni código que las consulte. No asumir columnas, nulabilidad, relaciones, estados o
-políticas hasta inspeccionar el esquema real y preparar una migración autorizada si corresponde.
+**Confirmado mediante migración y OpenAPI de PostgREST el 2026-11-26.** `orders` conserva `id`,
+`customer_name`, `customer_phone`, `address`, `total`, `status` y `created_at`; nombre y teléfono son
+obligatorios, y dirección es opcional. También contiene `public_code`, `source`, `idempotency_key`,
+`expires_at`, `confirmed_at`, `rejected_at` y `rejection_reason`. Los estados admitidos son `pending`,
+`confirmed`, `rejected` y `expired`.
+
+`order_items` contiene `id`, `order_id`, `product_id`, `quantity`, `unit_price`, `product_code` y `subtotal`.
+La combinación orden/producto es única; el código, precio y subtotal conservan el snapshot comercial de la
+reserva. Las FK existentes conectan los ítems con `orders.id` y `products.id`.
 
 ## Funciones y triggers
 
@@ -78,14 +84,26 @@ Reemplaza cualquier intento de actualización de `code` con `OLD.code`.
 
 Trigger: `products_preserve_code_before_update`, `BEFORE UPDATE OF code` sobre `products`.
 
+### Flujo transaccional de reservas
+
+- `next_order_public_code()`: consume una secuencia y genera códigos `RES-0001` sin reutilizarlos.
+- `create_pending_order(...)`: valida artículos únicos, consulta productos activos y precios vigentes, crea
+  orden e ítems juntos y devuelve el mismo resultado ante una clave de idempotencia repetida.
+- `confirm_pending_order(order_id)`: bloquea orden y productos, comprueba vencimiento y stock completo,
+  descuenta inventario y confirma en una sola transacción.
+- `reject_pending_order(order_id, reason)`: bloquea la orden pendiente, registra rechazo y no toca stock.
+- `expire_pending_orders()`: marca como vencidas las solicitudes pendientes cuyo plazo terminó.
+
+Las funciones son `SECURITY DEFINER`, tienen `search_path` vacío y solo conceden ejecución a `service_role`.
+
 ## Relaciones conocidas
 
 ```text
 categories 1 ─── N products
 categories 1 ─── 1 product_code_counters
 
-orders ? ─── ? order_items     pendiente de verificar
-products ? ─── ? order_items   pendiente de verificar
+orders 1 ─── N order_items
+products 1 ─── N order_items
 ```
 
 ## Clientes y seguridad
@@ -123,7 +141,9 @@ ni refresca tokens. Todo servicio que lo utiliza debe ejecutar primero `requireA
 | Desactivar/restaurar | `deactivateProduct` / `reactivateProduct` |
 | Actualizar referencia de imagen | `updateProductImage` |
 | Buscar producto por código | `adminProductService.ts#getProductByCode` |
-| Registrar órdenes | Pendiente; no existe implementación. |
+| Registrar reserva pendiente | `reservationOrderService.ts#createReservationOrder` mediante `create_pending_order` |
+| Listar y consultar reservas | `adminOrderService.ts#getAdminOrders` / `getAdminOrderById` |
+| Aceptar o rechazar | `adminOrderService.ts#confirmOrder` / `rejectOrder` |
 
 ## Supabase Storage
 
@@ -145,6 +165,11 @@ Supabase Auth autentica por correo/contraseña. La autorización adicional compa
 `ADMIN_USER_ID`. `proxy.ts`, layouts/páginas protegidas y servicios administrativos aplican controles
 complementarios. No hay registro público de administradores.
 
+El login admite sesión temporal o persistente. `beetho-admin-session-mode` es una cookie HttpOnly que solo
+guarda esa preferencia, nunca credenciales ni tokens. En modo temporal, el adaptador SSR elimina `maxAge` y
+`expires` de las cookies nuevas o renovadas de Auth; en modo persistente conserva la duración estándar de
+Supabase. Las cookies de eliminación (`maxAge: 0`) se preservan para mantener funcional el cierre de sesión.
+
 ## Variables de entorno
 
 - Públicas: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
@@ -157,7 +182,8 @@ No documentar valores, tokens, contraseñas o identificadores privados.
 1. Falta versionar el esquema base completo.
 2. Falta confirmar las restricciones e índices no incluidos en la migración disponible.
 3. Falta documentar y verificar todas las políticas RLS.
-4. Falta inspeccionar `orders` y `order_items` antes de implementar órdenes.
+4. La limitación pública por frecuencia vive en memoria de cada instancia; la idempotencia de PostgreSQL sí
+   es durable entre instancias.
 5. `rollbackCreatedProduct` elimina físicamente un producto recién creado solo para compensar un fallo de
    imagen; cualquier cambio a esta estrategia debe revisar también el contador de códigos.
 
