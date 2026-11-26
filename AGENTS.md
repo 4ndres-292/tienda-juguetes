@@ -1,4 +1,34 @@
 AGENTS.md — Beetho
+
+## Documentación obligatoria
+
+Antes de comenzar cualquier tarea, consultar:
+
+1. [Contexto del proyecto](docs/PROJECT_CONTEXT.md)
+2. [Base de datos](docs/DATABASE.md)
+3. [Sistema de diseño](docs/DESIGN_SYSTEM.md)
+4. [Clean Code](docs/CLEAN_CODE.md)
+
+### Reglas de consulta
+
+1. Leer primero la documentación disponible y utilizarla como referencia inicial.
+2. Consultar el código local cuando sea necesario confirmar una implementación.
+3. Evitar repetir consultas externas si la respuesta ya está documentada y sigue vigente.
+4. Verificar el estado real de servicios externos antes de operaciones sensibles.
+5. No asumir que la documentación representa automáticamente el estado actual de producción.
+6. Registrar como pendiente o no verificado aquello que no pueda comprobarse.
+
+### Reglas de actualización
+
+La actualización documental forma parte de la entrega de cada funcionalidad. Modificar únicamente
+los apartados afectados y conservar la información válida existente:
+
+- Nueva funcionalidad o cambio arquitectónico: actualizar `docs/PROJECT_CONTEXT.md`.
+- Nueva tabla, columna, función, trigger o política: actualizar `docs/DATABASE.md`.
+- Nuevo componente visual o cambio de estilos: actualizar `docs/DESIGN_SYSTEM.md`.
+- Nueva convención de desarrollo: actualizar `docs/CLEAN_CODE.md`.
+- Actualizar la fecha y el nivel de certeza de la información modificada.
+
 1. Contexto del proyecto
 Beetho es una tienda web de juguetes. El objetivo inicial es un MVP con catálogo público, categorías, búsqueda, detalle de productos, carrito y registro de pedidos sin autenticación de clientes.
 

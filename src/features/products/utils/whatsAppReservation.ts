@@ -1,7 +1,7 @@
 import type { Product } from "@/features/products/types/product";
 import { formatProductPrice } from "@/features/products/utils/productPresentation";
 
-export function buildWhatsAppReservationMessage(product: Product, quantity = 1) {
+export function buildWhatsAppReservationMessage(product: Product, quantity = 1): string {
   if (!Number.isInteger(quantity) || quantity <= 0) {
     throw new Error("Reservation quantity must be a positive integer");
   }
@@ -22,7 +22,7 @@ export function buildWhatsAppReservationUrl(
   product: Product,
   quantity = 1,
   phoneNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER,
-) {
+): string | null {
   if (!product.isActive || product.stock <= 0 || !phoneNumber) {
     return null;
   }

@@ -99,6 +99,23 @@ export async function getProductById(productId: string): Promise<Product | null>
   return data ? parseSingleProduct(data) : null;
 }
 
+export async function getProductByCode(productCode: string): Promise<Product | null> {
+  await requireAdmin();
+  const supabase = createPrivilegedSupabaseClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select(productColumns)
+    .eq("code", productCode)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Admin product by code: query failed", { code: error.code });
+    throw new Error("No se pudo consultar el producto");
+  }
+
+  return data ? parseSingleProduct(data) : null;
+}
+
 export async function getCategories(): Promise<Category[]> {
   await requireAdmin();
   const supabase = createPrivilegedSupabaseClient();

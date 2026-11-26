@@ -7,31 +7,43 @@ import {
 
 const product: Product = {
   id: "1",
-  code: "BET-0001",
+  code: "EDU-0001",
   categoryId: "1",
-  name: "Osito de peluche",
+  name: "Monopolio",
   description: null,
-  price: 80,
+  price: 25,
   stock: 3,
   imageUrl: null,
   isActive: true,
 };
 
 describe("WhatsApp reservation", () => {
-  it("builds a message with real product data and quantity", () => {
-    const message = buildWhatsAppReservationMessage(product, 2);
+  it("builds the exact multiline message with real product data", () => {
+    const message = buildWhatsAppReservationMessage(product, 1);
 
-    expect(message).toContain("Producto: Osito de peluche");
-    expect(message).toContain("Código: BET-0001");
-    expect(message).toContain("Cantidad: 2 unidades");
-    expect(message).toContain("Precio referencial: Bs 80,00");
+    expect(message).toBe([
+      "Hola, quiero reservar el siguiente juguete de Beetho:",
+      "",
+      "Producto: Monopolio",
+      "Código: EDU-0001",
+      "Cantidad: 1 unidad",
+      "Precio referencial: Bs 25,00",
+      "",
+      "¿Está disponible?",
+    ].join("\n"));
+  });
+
+  it("uses the plural form for quantities greater than one", () => {
+    expect(buildWhatsAppReservationMessage(product, 2)).toContain("Cantidad: 2 unidades");
   });
 
   it("encodes the message in the WhatsApp URL", () => {
     const url = buildWhatsAppReservationUrl(product, 1, "59176454746");
 
     expect(url).toContain("https://wa.me/59176454746?text=");
-    expect(decodeURIComponent(url?.split("?text=")[1] ?? "")).toContain("Cantidad: 1 unidad");
+    expect(decodeURIComponent(url?.split("?text=")[1] ?? "")).toBe(
+      buildWhatsAppReservationMessage(product, 1),
+    );
   });
 
   it("prevents reservations for unavailable products", () => {
